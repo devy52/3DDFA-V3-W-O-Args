@@ -34,17 +34,19 @@ def bilinear_interpolate(img, x, y):
     return wa.unsqueeze(-1) * i_a + wb.unsqueeze(-1) * i_b + wc.unsqueeze(-1) * i_c + wd.unsqueeze(-1) * i_d
 
 class face_model:
-    def __init__(self):
-        # Hardcoded settings
-        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        self.backbone = 'resnet50'  # Options: 'resnet50' or 'mbnetv3'
-        self.extract_texture = True  # Hardcode extractTex=True
-        self.use_landmarks_68 = True  # Hardcode ldm68=True
-        self.use_landmarks_106 = True  # Hardcode ldm106=True
-        self.use_landmarks_106_2d = True  # Hardcode ldm106_2d=True
-        self.use_landmarks_134 = True  # Hardcode ldm134=True
-        self.use_seg = True  # Hardcode seg=True
-        self.use_seg_visible = True  # Hardcode seg_visible=True
+    def __init__(self, backbone='resnet50', device=None, extract_texture=True, 
+                 use_landmarks_68=True, use_landmarks_106=True, use_landmarks_106_2d=True, 
+                 use_landmarks_134=True, use_seg=True, use_seg_visible=True):
+        # Use provided arguments or defaults
+        self.device = device if device else ('cuda' if torch.cuda.is_available() else 'cpu')
+        self.backbone = backbone  # 'resnet50' or 'mbnetv3'
+        self.extract_texture = extract_texture
+        self.use_landmarks_68 = use_landmarks_68
+        self.use_landmarks_106 = use_landmarks_106
+        self.use_landmarks_106_2d = use_landmarks_106_2d
+        self.use_landmarks_134 = use_landmarks_134
+        self.use_seg = use_seg
+        self.use_seg_visible = use_seg_visible
 
         # Load face model data
         model = np.load("./assets/face_model.npy", allow_pickle=True).item()
