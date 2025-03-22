@@ -13,7 +13,7 @@ import os
 from skimage import transform as trans
 import torch
 import warnings
-warnings.filterwarnings("ignore", category=np.VisibleDeprecationWarning) 
+warnings.filterwarnings("ignore", category=DeprecationWarning) 
 warnings.filterwarnings("ignore", category=FutureWarning)
 
 """Some code borrowed from https://github.com/sicxu/Deep3DFaceRecon_pytorch
