@@ -92,7 +92,7 @@ class SoftArgmax(nn.Module):
                 heatmap.view(batch_size, num_channel, height * width), dim=2
             ).view(batch_size, num_channel, height, width)
 
-            xx, yy = torch.meshgrid(list(map(torch.arange, [width, height])))
+            xx, yy = torch.meshgrid(list(map(torch.arange, [width, height])), indexing="ij")
 
             approx_x = (
                 softmax.mul(xx.float().to(device))
