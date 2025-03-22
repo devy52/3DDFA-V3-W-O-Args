@@ -92,7 +92,7 @@ class mtcnnface:
                 exit()
 
 class face_box:
-    def __init__(self, iscrop=True, detector='retinaface', device=None):def __init__(self, iscrop=True, detector='retinaface', device=None):
+    def __init__(self, iscrop=True, detector='retinaface', device=None):
         self.device = device if device else ('cuda' if torch.cuda.is_available() else 'cpu')
         self.iscrop=iscrop
         self.detector=detector
