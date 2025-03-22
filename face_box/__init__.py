@@ -92,14 +92,17 @@ class mtcnnface:
                 exit()
 
 class face_box:
-    def __init__(self, args):
-        if args.iscrop:
-            if args.detector == 'mtcnn':
+    def __init__(self, iscrop=True, detector='retinaface', device=None):def __init__(self, iscrop=True, detector='retinaface', device=None):
+        self.device = device if device else ('cuda' if torch.cuda.is_available() else 'cpu')
+        self.iscrop=iscrop
+        self.detector=detector
+        if self.iscrop:
+            if self.detector == 'mtcnn':
                 m = mtcnnface()
                 self.detector = m.detector
                 print('use mtcnn for face box')
-            elif args.detector == 'retinaface':
-                r = retinaface(args.device)
+            elif self.detector == 'retinaface':
+                r = retinaface(self.device)
                 self.detector = r.detector
                 print('use retinaface for face box')
             else:
