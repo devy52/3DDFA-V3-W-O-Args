@@ -164,10 +164,19 @@ def write_obj_with_colors(obj_name, vertices, triangles, colors):
             f.write(s)
 
 class visualize:
-    def __init__(self, result_dict, args):
+    def __init__(self, result_dict, ldm68=True, ldm106=True, ldm106_2d=True, ldm134=True,
+    seg=True, seg_visible=True, useTex=True, extractTex=True):
 
         self.items = ['render_shape','render_face']
         self.result_dict = result_dict
+        self.ldm68 = ldm68
+        self.ldm106 = ldm106
+        self.ldm106_2d = ldm106_2d
+        self.ldm134 = ldm134
+        self.seg = seg
+        self.seg_visible = seg_visible
+        self.useTex = useTex
+        self.extactTex = extractTex
         option_list = ['ldm68', 'ldm106', 'ldm106_2d', 'ldm134', 'seg', 'seg_visible']
         for i in option_list:
             if i in self.result_dict.keys():
@@ -175,7 +184,7 @@ class visualize:
         
         self.visualize_dict = []
         self.save_dict = {}
-        self.args = args
+        #self.args = args
 
     def visualize_and_output(self, trans_params, img, save_path, img_name):
         # assert batch_size = 1
@@ -262,14 +271,14 @@ class visualize:
             self.save_dict['seg'] = new_seg
 
         # please note that the coordinates of .obj do not account for the trans_params.
-        if self.args.extractTex:
+        if self.extractTex:
             v3d_new = self.result_dict['v3d'][0].copy()
             v3d_new[..., -1] = 10 - v3d_new[..., -1]
             write_obj_with_colors(os.path.join(save_path, img_name + '_extractTex.obj'), v3d_new, self.result_dict['tri'], self.result_dict['extractTex'])
             # cv2.imwrite(os.path.join(save_path, img_name + '_extractTex_uv.png'), (self.result_dict['extractTex_uv']*255).astype(np.uint8)[:,:,::-1])
 
         # please note that the coordinates of .obj do not account for the trans_params.
-        if self.args.useTex:
+        if self.useTex:
             v3d_new = self.result_dict['v3d'][0].copy()
             v3d_new[..., -1] = 10 - v3d_new[..., -1]
             write_obj_with_colors(os.path.join(save_path, img_name + '_pcaTex.obj'), v3d_new, self.result_dict['tri'], self.result_dict['face_texture'][0])
@@ -290,7 +299,6 @@ class visualize:
 
         cv2.imwrite(os.path.join(save_path, img_name + '.png'), img_res)
         np.save(os.path.join(save_path, img_name + '.npy'), self.save_dict)
-
 
 
 
