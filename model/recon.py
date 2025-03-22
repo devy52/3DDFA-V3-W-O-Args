@@ -74,13 +74,13 @@ class face_model:
         #self.args = args
         self.backbone = backbone
         self.device = device if device else ('cuda' if torch.cuda.is_available() else 'cpu')
-        self.extractTex = extractTex
-        self.ldm68 = ldm68
-        self.ldm106 = ldm106
-        self.ldm106_2d = ldm106_2d
-        self.ldm134 = ldm134
-        self.seg = seg
-        selg.seg_visible = seg_visible
+        self.extractTexB = extractTex
+        self.ldm68B = ldm68
+        self.ldm106B = ldm106
+        self.ldm106_2dB = ldm106_2d
+        self.ldm134B = ldm134
+        self.segB = seg
+        self.seg_visibleB = seg_visible
 
         self.device = self.device
         model = np.load("./assets/face_model.npy",allow_pickle=True).item()
@@ -102,7 +102,7 @@ class face_model:
         # vertex uv coordinates, size (35709, 3), range (0, 1.)
         self.uv_coords = torch.tensor(model['uv_coords'], requires_grad=False, dtype=torch.float32, device=self.device)
         
-        if self.extractTex:
+        if self.extractTexB:
             uv_coords_numpy = process_uv(model['uv_coords'].copy(), 1024, 1024)
             self.uv_coords_torch = (torch.tensor(uv_coords_numpy, requires_grad=False, dtype=torch.float32, device=self.device) / 1023 - 0.5) * 2
             if self.device == 'cpu':
@@ -120,25 +120,25 @@ class face_model:
             self.uv_coords_numpy[:,1] = 1024 - self.uv_coords_numpy[:,1] - 1
 
         # vertex indices for 68 landmarks, size (68,)
-        if self.ldm68:
-            self.ldm68 = torch.tensor(model['ldm68'], requires_grad=False, dtype=torch.int64, device=self.device)
+        if self.ldm68B:
+            self.ldm68B = torch.tensor(model['ldm68'], requires_grad=False, dtype=torch.int64, device=self.device)
         # vertex indices for 106 landmarks, size (106,)
-        if self.ldm106 or self.ldm106_2d:
+        if self.ldm106B or self.ldm106_2dB:
             self.ldm106 = torch.tensor(model['ldm106'], requires_grad=False, dtype=torch.int64, device=self.device)
         # vertex indices for 134 landmarks, size (134,)
-        if self.ldm134:
+        if self.ldm134B:
             self.ldm134 = torch.tensor(model['ldm134'], requires_grad=False, dtype=torch.int64, device=self.device)
 
         # segmentation annotation indices for 8 parts, [right_eye, left_eye, right_eyebrow, left_eyebrow, nose, up_lip, down_lip, skin]
-        if self.seg_visible:
+        if self.seg_visibleB:
             self.annotation = model['annotation']
 
         # segmentation triangle faces for 8 parts
-        if self.seg:
+        if self.segB:
             self.annotation_tri = [torch.tensor(i, requires_grad=False, dtype=torch.int64, device=self.device) for i in model['annotation_tri']]
 
         # face profile parallel, list
-        if self.ldm106_2d:
+        if self.ldm106_2dB:
             self.parallel = model['parallel']
             # parallel for profile matching
             self.v_parallel = - torch.ones(35709, device=self.device).type(torch.int64)
@@ -504,45 +504,45 @@ class face_model:
         }
 
         # compute visible vertice according to normal and renderer
-        if self.seg_visible or self.extractTex:
+        if self.seg_visibleB or self.extractTexB:
             visible_idx = torch.zeros(35709).type(torch.int64).to(v3d.device)
             visible_idx[visible_idx_renderer.type(torch.int64)] = 1
             visible_idx[(face_norm_roted[..., 2] < 0)[0]] = 0
             # result_dict['visible_idx'] = visible_idx
 
         # landmarks 68 3d
-        if self.ldm68:
+        if self.ldm68B:
             v2d_68 = self.get_landmarks_68(v2d)
             result_dict['ldm68'] = v2d_68.detach().cpu().numpy()
 
         # landmarks 106 3d
-        if self.ldm106:
+        if self.ldm106B:
             v2d_106 = self.get_landmarks_106(v2d)
             result_dict['ldm106'] = v2d_106.detach().cpu().numpy()
 
         # landmarks 106 2d
-        if self.ldm106_2d:
+        if self.ldm106_2dB:
             # v2d_106_2d = self.get_landmarks_106_2d(v2d, face_shape, alpha_dict, visible_idx)
             v2d_106_2d = self.get_landmarks_106_2d(v2d, face_shape, alpha_dict)
             result_dict['ldm106_2d'] = v2d_106_2d.detach().cpu().numpy()
 
         # landmarks 134
-        if self.ldm134:
+        if self.ldm134B:
             v2d_134 = self.get_landmarks_134(v2d)
             result_dict['ldm134'] = v2d_134.detach().cpu().numpy()
 
         # segmentation in 2d without visible mask
-        if self.seg:
+        if self.segB:
             seg = self.segmentation(v3d)
             result_dict['seg'] = seg.detach().cpu().numpy()
 
         # segmentation in 2d with visible mask
-        if self.seg_visible:
+        if self.seg_visibleB:
             seg_visible = self.segmentation_visible(v3d, visible_idx)
             result_dict['seg_visible'] = seg_visible.detach().cpu().numpy()
 
         # use median-filtered-weight pca-texture for texture blending at invisible region, todo: poisson blending should give better-looking results √ 2024-11-11
-        if self.extractTex:
+        if self.extractTexB:
             _, _, uv_color_pca, _ = self.uv_renderer(self.uv_coords_torch.unsqueeze(0).clone(), self.tri, (torch.clamp(face_texture, 0, 1)).clone())
             img_colors = bilinear_interpolate(self.input_img.permute(0, 2, 3, 1).detach()[0], v2d[0, :, 0].detach(), 223 - v2d[0, :, 1].detach())
             _, _, uv_color_img, _ = self.uv_renderer(self.uv_coords_torch.unsqueeze(0).clone(), self.tri, img_colors.unsqueeze(0).clone())

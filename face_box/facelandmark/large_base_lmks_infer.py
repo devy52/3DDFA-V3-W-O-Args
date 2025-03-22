@@ -2,6 +2,8 @@ import torch
 import numpy as np
 from face_box.facelandmark.nets.large_base_lmks_net import LargeBaseLmksNet
 
+torch.serialization.add_safe_globals([("numpy.core.multiarray", "scalar")])
+
 BASE_LANDMARK_NUM = 106
 INPUT_SIZE = 224
 ENLARGE_RATIO = 1.35
@@ -17,9 +19,9 @@ class LargeBaseLmkInfer:
 
         checkpoint = []
         if use_gpu:
-            checkpoint = torch.load(model_path, map_location='cuda')
+            checkpoint = torch.load(model_path, map_location='cuda', weights_only=False)
         else:
-            checkpoint = torch.load(model_path, map_location='cpu')
+            checkpoint = torch.load(model_path, map_location='cpu', weights_only=False)
 
         model.load_state_dict({k.replace('module.', ''): v for k, v in checkpoint['state_dict'].items()}, strict=False)
         model.eval()
