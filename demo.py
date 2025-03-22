@@ -1,77 +1,67 @@
-import argparse
 import cv2
 import os
-import sys
 import torch
 import numpy as np
 from PIL import Image
 
+%cd 3DDFA-V3-W-O-Args/
 from face_box import face_box
 from model.recon import face_model
 from util.preprocess import get_data_path
 from util.io import visualize
-def main(args):
 
-    recon_model = face_model(args)
-    facebox_detector = face_box(args).detector
-    im_path = get_data_path(args.inputpath)
 
-    for i in range(len(im_path)):
-        print(i, im_path[i])
-        im = Image.open(im_path[i]).convert('RGB')
-        trans_params, im_tensor = facebox_detector(im)
+def main():
+    # Hardcoded settings
+    input_folder = 'examples'  # Where images are uploaded
+    output_folder = 'examples/results'  # Where results are saved
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-        recon_model.input_img = im_tensor.to(args.device)
+    # Initialize models with minimal config
+    recon_model = face_model(backbone='resnet50', device=device)
+    face_detector = face_box(detector='retinaface').detector
+
+    # Get list of images from input folder
+    image_paths = get_data_path(input_folder)
+
+    # Process each image
+    for i, image_path in enumerate(image_paths):
+        print(f"Processing {i}: {image_path}")
+
+        # Load and preprocess image
+        img = Image.open(image_path).convert('RGB')
+        trans_params, img_tensor = face_detector(img)
+
+        # Run reconstruction
+        recon_model.input_img = img_tensor.to(device)
         results = recon_model.forward()
 
-        if not os.path.exists(os.path.join(args.savepath, im_path[i].split('/')[-1].replace('.png','').replace('.jpg',''))):
-            os.makedirs(os.path.join(args.savepath, im_path[i].split('/')[-1].replace('.png','').replace('.jpg','')))
-        my_visualize = visualize(results, args)
+        # Create output directory based on image name
+        img_name = image_path.split('/')[-1].replace('.png', '').replace('.jpg', '')
+        output_dir = os.path.join(output_folder, img_name)
+        os.makedirs(output_dir, exist_ok=True)
 
-        my_visualize.visualize_and_output(trans_params, cv2.cvtColor(np.asarray(im), cv2.COLOR_RGB2BGR), \
-            os.path.join(args.savepath, im_path[i].split('/')[-1].replace('.png','').replace('.jpg','')), \
-            im_path[i].split('/')[-1].replace('.png','').replace('.jpg',''))
-        # my_visualize.visualize_and_output(trans_params, cv2.cvtColor(np.asarray(im), cv2.COLOR_RGB2BGR), \
-        #     os.path.join(args.savepath), \
-        #     im_path[i].split('/')[-1].replace('.png','').replace('.jpg',''))
-
+        # Visualize and save results
+        print(results.keys())
+        viz = visualize(
+            results,
+            ldm68=True, ldm106=True, ldm106_2d=True, ldm134=True,
+            seg=True, seg_visible=True, useTex=True, extractTex=True
+        )
+        viz.visualize_and_output(
+            trans_params,
+            cv2.cvtColor(np.asarray(img), cv2.COLOR_RGB2BGR),
+            output_dir,
+            img_name
+        )
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='3DDFA-V3')
+    # Colab-specific: Upload images and setup
+    from google.colab import files
+    uploaded = files.upload()
+    os.makedirs('examples', exist_ok=True)
+    for filename in uploaded.keys():
+        with open(os.path.join('examples', filename), 'wb') as f:
+            f.write(uploaded[filename])
 
-    parser.add_argument('-i', '--inputpath', default='examples/', type=str,
-                        help='path to the test data, should be a image folder')
-    parser.add_argument('-s', '--savepath', default='examples/results', type=str,
-                        help='path to the output directory, where results (obj, png files) will be stored.')
-    parser.add_argument('--device', default='cuda', type=str,
-                        help='set device, cuda or cpu' )
-
-    # process test images
-    parser.add_argument('--iscrop', default=True, type=lambda x: x.lower() in ['true', '1'],
-                        help='whether to crop input image, set false only when the test image are well cropped and resized into (224,224,3).' )
-    parser.add_argument('--detector', default='retinaface', type=str,
-                        help='face detector for cropping image, support for mtcnn and retinaface')
-
-    # save
-    parser.add_argument('--ldm68', default=True, type=lambda x: x.lower() in ['true', '1'],
-                        help='save and show 68 landmarks')
-    parser.add_argument('--ldm106', default=True, type=lambda x: x.lower() in ['true', '1'],
-                        help='save and show 106 landmarks')
-    parser.add_argument('--ldm106_2d', default=True, type=lambda x: x.lower() in ['true', '1'],
-                        help='save and show 106 landmarks, face profile is in 2d form')
-    parser.add_argument('--ldm134', default=True, type=lambda x: x.lower() in ['true', '1'],
-                        help='save and show 134 landmarks' )
-    parser.add_argument('--seg', default=True, type=lambda x: x.lower() in ['true', '1'],
-                        help='save and show segmentation in 2d without visible mask' )
-    parser.add_argument('--seg_visible', default=True, type=lambda x: x.lower() in ['true', '1'],
-                        help='save and show segmentation in 2d with visible mask' )
-    parser.add_argument('--useTex', default=True, type=lambda x: x.lower() in ['true', '1'],
-                        help='save obj use texture from BFM model')
-    parser.add_argument('--extractTex', default=True, type=lambda x: x.lower() in ['true', '1'],
-                        help='save obj use texture extracted from input image')
-
-    # backbone
-    parser.add_argument('--backbone', default='resnet50', type=str,
-                        help='backbone for reconstruction, support for resnet50 and mbnetv3')
-
-    main(parser.parse_args())
+    main()
