@@ -121,7 +121,7 @@ class face_model:
 
         # vertex indices for 68 landmarks, size (68,)
         if self.ldm68B:
-            self.ldm68B = torch.tensor(model['ldm68'], requires_grad=False, dtype=torch.int64, device=self.device)
+            self.ldm68 = torch.tensor(model['ldm68'], requires_grad=False, dtype=torch.int64, device=self.device)
         # vertex indices for 106 landmarks, size (106,)
         if self.ldm106B or self.ldm106_2dB:
             self.ldm106 = torch.tensor(model['ldm106'], requires_grad=False, dtype=torch.int64, device=self.device)

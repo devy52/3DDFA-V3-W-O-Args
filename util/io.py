@@ -176,7 +176,7 @@ class visualize:
         self.seg = seg
         self.seg_visible = seg_visible
         self.useTex = useTex
-        self.extactTex = extractTex
+        self.extractTex = extractTex
         option_list = ['ldm68', 'ldm106', 'ldm106_2d', 'ldm134', 'seg', 'seg_visible']
         for i in option_list:
             if i in self.result_dict.keys():
